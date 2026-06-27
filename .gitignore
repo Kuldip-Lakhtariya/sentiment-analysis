@@ -1,0 +1,13 @@
+# large model files — loaded from HuggingFace on deployment
+models/bert_model/
+
+# python cache
+__pycache__/
+*.pyc
+
+# jupyter checkpoints
+.ipynb_checkpoints/
+
+# environment
+venv/
+.env
