@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>SentimentIQ — Movie Review Analyzer</title>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #0d0f14;
+      --surface:   #13161e;
+      --card:      #1a1e2a;
+      --border:    #252b3b;
+      --accent:    #7c6dfa;
+      --accent2:   #fa6d9a;
+      --positive:  #4ade80;
+      --negative:  #f87171;
+      --text:      #e8eaf0;
+      --muted:     #6b7390;
+      --mono:      'JetBrains Mono', monospace;
+      --sans:      'Space Grotesk', sans-serif;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--sans);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 48px 16px 80px;
+    }
+
+    /* ── Header ── */
+    header {
+      text-align: center;
+      margin-bottom: 48px;
+    }
+    .logo-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: linear-gradient(135deg, rgba(124,109,250,.15), rgba(250,109,154,.1));
+      border: 1px solid rgba(124,109,250,.3);
+      border-radius: 999px;
+      padding: 6px 16px;
+      font-size: 12px;
+      font-weight: 500;
+      letter-spacing: .08em;
+      color: var(--accent);
+      text-transform: uppercase;
+      margin-bottom: 20px;
+    }
+    .logo-pill span { font-size: 16px; }
+    h1 {
+      font-size: clamp(2rem, 5vw, 3.2rem);
+      font-weight: 700;
+      letter-spacing: -.02em;
+      background: linear-gradient(135deg, #fff 30%, var(--accent));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      line-height: 1.1;
+    }
+    .subtitle {
+      margin-top: 12px;
+      color: var(--muted);
+      font-size: 15px;
+      font-weight: 400;
+      max-width: 440px;
+      margin-inline: auto;
+      line-height: 1.6;
+    }
+
+    /* ── Main card ── */
+    .card {
+      width: 100%;
+      max-width: 720px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 32px;
+      position: relative;
+      overflow: hidden;
+    }
+    .card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, var(--accent), var(--accent2));
+    }
+
+    /* ── Model toggle ── */
+    .section-label {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 10px;
+    }
+    .toggle-group {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 24px;
+    }
+    .toggle-btn {
+      flex: 1;
+      padding: 10px 16px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--muted);
+      font-family: var(--sans);
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all .2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+    .toggle-btn:hover { border-color: var(--accent); color: var(--text); }
+    .toggle-btn.active {
+      background: linear-gradient(135deg, rgba(124,109,250,.2), rgba(124,109,250,.05));
+      border-color: var(--accent);
+      color: var(--text);
+    }
+    .toggle-btn .badge {
+      font-size: 10px;
+      font-family: var(--mono);
+      background: rgba(124,109,250,.2);
+      color: var(--accent);
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+
+    /* ── Textarea ── */
+    .textarea-wrap { position: relative; margin-bottom: 8px; }
+    textarea {
+      width: 100%;
+      min-height: 160px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      color: var(--text);
+      font-family: var(--sans);
+      font-size: 15px;
+      line-height: 1.6;
+      padding: 16px;
+      resize: vertical;
+      outline: none;
+      transition: border-color .2s;
+    }
+    textarea:focus { border-color: var(--accent); }
+    textarea::placeholder { color: var(--muted); }
+    .char-count {
+      text-align: right;
+      font-size: 12px;
+      color: var(--muted);
+      font-family: var(--mono);
+      margin-bottom: 20px;
+    }
+
+    /* ── Examples ── */
+    .examples-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 24px;
+    }
+    .example-chip {
+      font-size: 12px;
+      padding: 5px 12px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--muted);
+      cursor: pointer;
+      transition: all .2s;
+      font-family: var(--sans);
+    }
+    .example-chip:hover { border-color: var(--accent); color: var(--text); }
+
+    /* ── Button ── */
+    .analyze-btn {
+      width: 100%;
+      padding: 14px;
+      border-radius: 12px;
+      border: none;
+      background: linear-gradient(135deg, var(--accent), #9b8dfc);
+      color: #fff;
+      font-family: var(--sans);
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity .2s, transform .1s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+    .analyze-btn:hover { opacity: .9; }
+    .analyze-btn:active { transform: scale(.99); }
+    .analyze-btn:disabled { opacity: .5; cursor: not-allowed; }
+
+    /* ── Result ── */
+    #result { margin-top: 28px; display: none; }
+
+    .result-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 20px;
+    }
+    .sentiment-badge {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 24px;
+      font-weight: 700;
+    }
+    .sentiment-emoji { font-size: 36px; }
+    .model-used {
+      font-size: 11px;
+      font-family: var(--mono);
+      color: var(--muted);
+      background: var(--surface);
+      border: 1px solid var(--border);
+      padding: 4px 10px;
+      border-radius: 6px;
+    }
+
+    /* ── Confidence bar ── */
+    .conf-section { margin-bottom: 20px; }
+    .conf-label-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-bottom: 8px;
+    }
+    .conf-label { font-size: 12px; color: var(--muted); font-weight: 500; }
+    .conf-value {
+      font-size: 28px;
+      font-weight: 700;
+      font-family: var(--mono);
+    }
+    .conf-bar-track {
+      height: 8px;
+      background: var(--surface);
+      border-radius: 999px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+    }
+    .conf-bar-fill {
+      height: 100%;
+      border-radius: 999px;
+      transition: width .8s cubic-bezier(.4,0,.2,1);
+      width: 0%;
+    }
+
+    /* ── Intensity card ── */
+    .intensity-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px 20px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+    .intensity-icon { font-size: 28px; }
+    .intensity-text .intensity-level {
+      font-size: 15px;
+      font-weight: 600;
+    }
+    .intensity-text .intensity-desc {
+      font-size: 13px;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+
+    /* ── Divider ── */
+    .divider {
+      height: 1px;
+      background: var(--border);
+      margin: 28px 0;
+    }
+
+    /* ── Stats row ── */
+    .stats-row {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+    }
+    .stat-cell {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 14px;
+      text-align: center;
+    }
+    .stat-value {
+      font-size: 20px;
+      font-weight: 700;
+      font-family: var(--mono);
+      color: var(--accent);
+    }
+    .stat-label {
+      font-size: 11px;
+      color: var(--muted);
+      margin-top: 4px;
+      letter-spacing: .05em;
+    }
+
+    /* ── Footer ── */
+    footer {
+      margin-top: 48px;
+      text-align: center;
+      font-size: 13px;
+      color: var(--muted);
+    }
+    footer a { color: var(--accent); text-decoration: none; }
+
+    /* ── Loading spinner ── */
+    .spinner {
+      width: 18px; height: 18px;
+      border: 2px solid rgba(255,255,255,.3);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin .7s linear infinite;
+      display: none;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    @media (max-width: 500px) {
+      .card { padding: 20px; }
+      .stats-row { grid-template-columns: 1fr 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo-pill"><span>🧠</span> SentimentIQ</div>
+  <h1>Read the Room</h1>
+  <p class="subtitle">Paste any movie review and instantly discover its emotional pulse — powered by TF-IDF or fine-tuned BERT.</p>
+</header>
+
+<div class="card">
+
+  <!-- Model toggle -->
+  <div class="section-label">Choose Model</div>
+  <div class="toggle-group">
+    <button class="toggle-btn active" onclick="selectModel('tfidf', this)">
+      ⚡ TF-IDF + LR <span class="badge">Fast</span>
+    </button>
+    <button class="toggle-btn" onclick="selectModel('bert', this)">
+      🤖 BERT <span class="badge">Deep</span>
+    </button>
+  </div>
+
+  <!-- Textarea -->
+  <div class="section-label">Your Review</div>
+  <div class="textarea-wrap">
+    <textarea id="reviewText" placeholder="e.g. The cinematography was breathtaking but the plot fell completely flat..." oninput="updateCount()"></textarea>
+  </div>
+  <div class="char-count"><span id="charCount">0</span> characters</div>
+
+  <!-- Example chips -->
+  <div class="section-label">Try an example</div>
+  <div class="examples-row">
+    <button class="example-chip" data-index="0" onclick="cycleExample(this, 'masterpiece')">👏 Masterpiece</button>
+    <button class="example-chip" data-index="0" onclick="cycleExample(this, 'boring')">😴 Boring</button>
+    <button class="example-chip" data-index="0" onclick="cycleExample(this, 'mixed')">🎭 Mixed</button>
+    <button class="example-chip" data-index="0" onclick="cycleExample(this, 'awful')">💀 Awful</button>
+    <button class="example-chip" data-index="0" onclick="cycleExample(this, 'funny')">😂 Funny</button>
+  </div>
+
+  <!-- Button -->
+  <button class="analyze-btn" id="analyzeBtn" onclick="analyze()">
+    <div class="spinner" id="spinner"></div>
+    <span id="btnText">Analyze Sentiment</span>
+  </button>
+
+  <!-- Result -->
+  <div id="result">
+    <div class="divider"></div>
+
+    <div class="result-header">
+      <div class="sentiment-badge">
+        <span class="sentiment-emoji" id="sentEmoji"></span>
+        <span id="sentLabel" style="color: var(--positive)"></span>
+      </div>
+      <div class="model-used" id="modelUsed"></div>
+    </div>
+
+    <div class="conf-section">
+      <div class="conf-label-row">
+        <span class="conf-label">CONFIDENCE</span>
+        <span class="conf-value" id="confValue"></span>
+      </div>
+      <div class="conf-bar-track">
+        <div class="conf-bar-fill" id="confBar"></div>
+      </div>
+    </div>
+
+    <div class="intensity-card">
+      <div class="intensity-icon" id="intensityIcon"></div>
+      <div class="intensity-text">
+        <div class="intensity-level" id="intensityLevel"></div>
+        <div class="intensity-desc" id="intensityDesc"></div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="stats-row">
+      <div class="stat-cell">
+        <div class="stat-value" id="statWords">—</div>
+        <div class="stat-label">WORDS</div>
+      </div>
+      <div class="stat-cell">
+        <div class="stat-value" id="statChars">—</div>
+        <div class="stat-label">CHARACTERS</div>
+      </div>
+      <div class="stat-cell">
+        <div class="stat-value" id="statModel">—</div>
+        <div class="stat-label">MODEL</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<footer>
+  Built by <a href="https://github.com/Kuldip-Lakhtariya" target="_blank">Kuldip Lakhtariya</a> · TF-IDF 88% · BERT 87% on IMDb 25k
+</footer>
+
+<script>
+  let selectedModel = 'tfidf';
+
+  const examples = {
+    masterpiece: [
+      'An absolute masterpiece. Every scene is layered with emotion and the performances are career-defining.',
+      'Rarely does a film move me to tears. This one did — twice. A triumph of storytelling.',
+      'The direction is flawless, the score unforgettable. One of the greatest films ever made.',
+      'I left the cinema feeling changed. Pure cinematic magic from start to finish.',
+      'Outstanding in every way. A film that will be studied and celebrated for decades.'
+    ],
+    boring: [
+      'A dull, predictable mess. I checked my phone every ten minutes hoping it would end soon.',
+      'Painfully slow and utterly forgettable. Two hours I will never get back.',
+      'Nothing happens for the first hour. By the time it picked up, I had stopped caring.',
+      'Generic plot, wooden performances, and a soundtrack that felt like elevator music.',
+      'I fell asleep twice and still felt like I missed nothing important.'
+    ],
+    mixed: [
+      'Visually stunning but emotionally hollow. Great effects, forgettable story.',
+      'The first half is brilliant. The second half throws it all away with a lazy ending.',
+      'Incredible action sequences let down by a script that makes no sense.',
+      'The lead performance is award-worthy, but the supporting cast drags it down.',
+      'Ambitious and beautiful to look at — but the emotional core never lands.'
+    ],
+    awful: [
+      'One of the worst films I have ever seen. Terrible acting and a nonsensical plot.',
+      'An embarrassment to everyone involved. I cannot believe this got made.',
+      'Insulting to the audience. Lazy, cheap, and completely devoid of originality.',
+      'I wanted to walk out but I had already paid. Do not make my mistake.',
+      'A disaster from the opening scene. Not a single redeeming quality.'
+    ],
+    funny: [
+      'I laughed so hard I cried. Genuinely the funniest film of the year.',
+      'Sharp, clever writing with perfect comic timing. Every joke lands.',
+      'A comedy that actually respects its audience. Witty without being mean-spirited.',
+      'The chemistry between the leads is electric. Couldn\'t stop smiling the whole time.',
+      'Hilarious and surprisingly heartwarming. Exactly what I needed.'
+    ]
+  };
+
+  function selectModel(model, btn) {
+    selectedModel = model;
+    document.querySelectorAll('.toggle-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+  }
+
+  function updateCount() {
+    const t = document.getElementById('reviewText').value;
+    document.getElementById('charCount').textContent = t.length;
+  }
+
+  function cycleExample(btn, category) {
+    const pool = examples[category];
+    let idx = parseInt(btn.dataset.index || '0');
+    document.getElementById('reviewText').value = pool[idx];
+    updateCount();
+    btn.dataset.index = (idx + 1) % pool.length;
+  }
+
+  function getSentimentEmoji(label, confidence) {
+    const isPos = label === 'Positive';
+    if (confidence >= 75) return isPos ? '🤩' : '💔';
+    if (confidence >= 50) return isPos ? '❤️' : '😭';
+    if (confidence >= 25) return isPos ? '🙂' : '😕';
+    return isPos ? '😐' : '😶';
+  }
+
+  function getIntensity(label, confidence) {
+    const isPos = label === 'Positive';
+    if (confidence >= 75) return isPos
+      ? { icon: '🤩', level: 'Extremely Positive', desc: 'The model is certain — this review radiates love.' }
+      : { icon: '💔', level: 'Extremely Negative', desc: 'The model is certain — this review is heartbreaking to read.' };
+    if (confidence >= 50) return isPos
+      ? { icon: '❤️', level: 'Clearly Positive', desc: 'Confident positive sentiment with strong signals.' }
+      : { icon: '😭', level: 'Clearly Negative', desc: 'Confident negative sentiment with clear disappointment.' };
+    if (confidence >= 25) return isPos
+      ? { icon: '🙂', level: 'Leaning Positive', desc: 'More positive than negative, but not strongly.' }
+      : { icon: '😕', level: 'Leaning Negative', desc: 'More negative than positive, but mixed signals.' };
+    return isPos
+      ? { icon: '😐', level: 'Barely Positive', desc: 'Very uncertain — review may be mixed or ambiguous.' }
+      : { icon: '😶', level: 'Barely Negative', desc: 'Very uncertain — review may be mixed or ambiguous.' };
+  }
+
+  async function analyze() {
+    const text = document.getElementById('reviewText').value.trim();
+    if (!text) { alert('Please enter a review first.'); return; }
+
+    const btn = document.getElementById('analyzeBtn');
+    const spinner = document.getElementById('spinner');
+    const btnText = document.getElementById('btnText');
+    btn.disabled = true;
+    spinner.style.display = 'block';
+    btnText.textContent = 'Analyzing...';
+
+    try {
+      const res = await fetch('/predict', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text, model: selectedModel })
+      });
+      const data = await res.json();
+
+      const isPos = data.label === 'Positive';
+      const color = isPos ? 'var(--positive)' : 'var(--negative)';
+      const intensity = getIntensity(data.label, data.confidence);
+
+      document.getElementById('sentEmoji').textContent = getSentimentEmoji(data.label, data.confidence);
+      document.getElementById('sentLabel').textContent = data.label;
+      document.getElementById('sentLabel').style.color = color;
+      document.getElementById('confValue').textContent = data.confidence + '%';
+      document.getElementById('confValue').style.color = color;
+      document.getElementById('modelUsed').textContent = data.model === 'bert' ? '🤖 BERT' : '⚡ TF-IDF';
+
+      const bar = document.getElementById('confBar');
+      bar.style.width = '0%';
+      bar.style.background = `linear-gradient(90deg, ${color}, ${isPos ? '#86efac' : '#fca5a5'})`;
+      setTimeout(() => { bar.style.width = data.confidence + '%'; }, 50);
+
+      document.getElementById('intensityIcon').textContent = intensity.icon;
+      document.getElementById('intensityLevel').textContent = intensity.level;
+      document.getElementById('intensityDesc').textContent = intensity.desc;
+
+      const words = text.split(/\s+/).filter(Boolean).length;
+      document.getElementById('statWords').textContent = words;
+      document.getElementById('statChars').textContent = text.length;
+      document.getElementById('statModel').textContent = data.model === 'bert' ? 'BERT' : 'TF-IDF';
+
+      const resultEl = document.getElementById('result');
+      resultEl.style.display = 'block';
+      resultEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+    } catch(e) {
+      alert('Error connecting to server. Make sure Flask is running.');
+    } finally {
+      btn.disabled = false;
+      spinner.style.display = 'none';
+      btnText.textContent = 'Analyze Sentiment';
+    }
+  }
+</script>
+</body>
+</html>
