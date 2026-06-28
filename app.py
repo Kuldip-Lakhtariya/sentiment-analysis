@@ -8,8 +8,11 @@ app = Flask(__name__)
 
 ifidf = joblib.load("models/tfidf_vectorizer.pkl")
 lr_model = joblib.load("models/lr_model.pkl")
-bert_tokenizer = BertTokenizer.from_pretrained("models/bert_model")
-bert_model = BertForSequenceClassification.from_pretrained("models/bert_model")
+BERT_MODEL_PATH = "kuldip2611/sentiment-bert"
+
+# loads from HuggingFace Hub on first run, then caches locally
+bert_tokenizer = BertTokenizer.from_pretrained(BERT_MODEL_PATH)
+bert_model = BertForSequenceClassification.from_pretrained(BERT_MODEL_PATH)
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 bert_model = bert_model.to(device)
