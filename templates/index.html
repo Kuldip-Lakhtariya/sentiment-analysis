@@ -354,14 +354,11 @@
 
 <div class="card">
 
-  <!-- Model toggle -->
-  <div class="section-label">Choose Model</div>
+  <!-- Model info -->
+  <div class="section-label">Model</div>
   <div class="toggle-group">
-    <button class="toggle-btn active" onclick="selectModel('tfidf', this)">
-      ⚡ TF-IDF + LR <span class="badge">Fast</span>
-    </button>
-    <button class="toggle-btn" onclick="selectModel('bert', this)">
-      🤖 BERT <span class="badge">Deep</span>
+    <button class="toggle-btn active" style="cursor:default;">
+      ⚡ TF-IDF + Logistic Regression <span class="badge">88% Accuracy</span>
     </button>
   </div>
 
@@ -442,7 +439,7 @@
 </footer>
 
 <script>
-  let selectedModel = 'tfidf';
+
 
   const examples = {
     masterpiece: [
@@ -540,7 +537,7 @@
       const res = await fetch('/predict', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text, model: selectedModel })
+        body: JSON.stringify({ text, model: 'tfidf' })
       });
       const data = await res.json();
 
